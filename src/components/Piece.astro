@@ -1,0 +1,91 @@
+---
+import Base from '../layouts/Base.astro';
+import BottleArt from './BottleArt.astro';
+import { site, type Lang } from '../data/site';
+import { products, statusLabel, productUrl, formatPrice, type Product } from '../data/products';
+import { useT } from '../i18n';
+
+interface Props { lang: Lang; product: Product }
+const { lang, product: p } = Astro.props;
+const t = useT(lang);
+const home = lang === 'pt' ? '/' : '/en/';
+const other: Lang = lang === 'pt' ? 'en' : 'pt';
+const related = products.filter((x) => x.slug !== p.slug && x.category === p.category)
+  .concat(products.filter((x) => x.slug !== p.slug && x.category !== p.category)).slice(0, 3);
+const waText = encodeURIComponent(`${t('form.greeting')}: ${p.name[lang]} (${formatPrice(lang, p.price)}).`);
+---
+<Base lang={lang} altPath={productUrl(other, p.slug)} title={`${p.name[lang]} — ${site.brand} ${site.brandSuffix}`} description={p.short[lang]}>
+  <section class="piece dark">
+    <div class="wrap piece-grid">
+      <div class="piece-art">
+        {p.photos?.length
+          ? <img src={p.photos[0]} alt={p.name[lang]} />
+          : <BottleArt art={p.art} id={`piece-${p.slug}`} />}
+      </div>
+      <div class="piece-info">
+        <a class="back" href={`${home}#work`}>← {t('piece.back')}</a>
+        <p class="kicker">{statusLabel[p.status][lang]}</p>
+        <h1>{p.name[lang]}</h1>
+        <p class="lead">{p.story[lang]}</p>
+        <dl class="specs">
+          <div><dt>{t('piece.price')}</dt><dd>{formatPrice(lang, p.price)}</dd></div>
+          <div><dt>{t('piece.height')}</dt><dd>{p.height} cm</dd></div>
+          <div><dt>{t('piece.materials')}</dt><dd>{p.materials[lang]}</dd></div>
+        </dl>
+        <div class="ctas">
+          <a class="btn btn-primary" href={`${home}?peca=${p.slug}#order`}>
+            {p.status === 'sold' ? t('piece.cta.sold') : t('piece.cta')}
+          </a>
+          <a class="btn btn-ghost" href={`https://wa.me/${site.whatsapp}?text=${waText}`} target="_blank" rel="noopener">WhatsApp</a>
+        </div>
+        <p class="care">{t('piece.care')}</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="more">
+    <div class="wrap">
+      <h2>{t('piece.more')}</h2>
+      <ul class="related">
+        {related.map((r) => (
+          <li>
+            <a href={productUrl(lang, r.slug)}>
+              <div class="r-art">{r.photos?.length ? <img src={r.photos[0]} alt="" loading="lazy" /> : <BottleArt art={r.art} id={`rel-${p.slug}-${r.slug}`} />}</div>
+              <span class="r-name">{r.name[lang]}</span>
+              <span class="r-price">{formatPrice(lang, r.price)}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .piece { padding: 120px 0 80px; background: radial-gradient(55% 70% at 25% 55%, #3a2814 0%, var(--night) 70%); }
+  .piece-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(2rem, 6vw, 5rem); align-items: center; }
+  .piece-art { height: min(72vh, 600px); padding: 1rem 10%; }
+  .piece-art img { width: 100%; height: 100%; object-fit: cover; border-radius: var(--radius); }
+  .back { display: inline-block; margin-bottom: 2rem; text-decoration: none; color: #c9b9a4; font-size: .9rem; }
+  .back:hover { color: var(--amber-soft); }
+  h1 { font-size: clamp(2.6rem, 6vw, 4.6rem); font-weight: 400; }
+  .specs { display: grid; gap: .1rem; margin: 2rem 0; border-top: 1px solid rgba(255,255,255,.12); }
+  .specs div { display: grid; grid-template-columns: 9rem 1fr; padding: .8rem 0; border-bottom: 1px solid rgba(255,255,255,.12); }
+  .specs dt { color: #a8977f; font-size: .9rem; }
+  .specs dd { margin: 0; }
+  .ctas { display: flex; flex-wrap: wrap; gap: .8rem; }
+  .care { margin-top: 1.4rem; font-size: .85rem; color: #a8977f; }
+  .more h2 { font-size: 2rem; margin-bottom: 1.5rem; }
+  .related { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.4rem; }
+  .related a { display: grid; gap: .2rem; text-decoration: none; }
+  .r-art { aspect-ratio: 1; border-radius: var(--radius); background: radial-gradient(70% 60% at 50% 60%, #2c2117, var(--night)); padding: 1.2rem; margin-bottom: .6rem; transition: transform .3s; }
+  .related a:hover .r-art { transform: translateY(-4px); }
+  .r-name { font-family: var(--display); font-size: 1.3rem; }
+  .r-price { color: var(--terracotta); font-weight: 600; font-size: .95rem; }
+  @media (max-width: 860px) {
+    .piece-grid { grid-template-columns: 1fr; }
+    .piece-art { height: 380px; }
+    .specs div { grid-template-columns: 7rem 1fr; }
+  }
+  @media (max-width: 560px) { .related { grid-template-columns: 1fr 1fr; } .related li:nth-child(3) { display: none; } }
+</style>

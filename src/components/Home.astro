@@ -1,0 +1,427 @@
+---
+import Base from '../layouts/Base.astro';
+import BottleArt from './BottleArt.astro';
+import { site, type Lang } from '../data/site';
+import { products, categories, statusLabel, productUrl, formatPrice } from '../data/products';
+import { events, mapsUrl } from '../data/events';
+import { useT, testimonials } from '../i18n';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const t = useT(lang);
+const locale = lang === 'pt' ? 'pt-PT' : 'en-GB';
+const altPath = lang === 'pt' ? '/en/' : '/';
+
+const today = new Date().toISOString().slice(0, 10);
+const upcoming = events
+  .filter((e) => (e.end ?? e.start) >= today)
+  .sort((a, b) => a.start.localeCompare(b.start));
+const d = (s: string) => new Date(`${s}T12:00:00`);
+const day = (e: (typeof events)[number]) => {
+  const s = d(e.start).getDate();
+  return e.end ? `${s}–${d(e.end).getDate()}` : `${s}`;
+};
+const month = (s: string) => new Intl.DateTimeFormat(locale, { month: 'short' }).format(d(s)).replace('.', '');
+const weekday = (e: (typeof events)[number]) => {
+  const f = new Intl.DateTimeFormat(locale, { weekday: 'long' });
+  return e.end ? `${f.format(d(e.start))} – ${f.format(d(e.end))}` : f.format(d(e.start));
+};
+const hero = ['atlantico', 'douro-ambar', 'noite-alfama'].map((s) => products.find((p) => p.slug === s)!);
+const steps = [1, 2, 3, 4] as const;
+---
+<Base lang={lang} altPath={altPath}>
+  <!-- HERO -->
+  <section class="hero dark" data-hero>
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <p class="kicker">{t('hero.kicker')}</p>
+        <h1>{t('hero.title')}</h1>
+        <p class="lead">{t('hero.lead')}</p>
+        <div class="hero-ctas">
+          <a class="btn btn-primary" href="#work">{t('hero.cta')}</a>
+          <a class="btn btn-ghost" href="#order">{t('hero.cta2')}</a>
+        </div>
+        <dl class="stats">
+          <div><dt>100%</dt><dd>{t('hero.stat1')}</dd></div>
+          <div><dt>♻</dt><dd>{t('hero.stat2')}</dd></div>
+          <div><dt>7–10</dt><dd>{t('hero.stat3')}</dd></div>
+        </dl>
+      </div>
+      <div class="hero-art">
+        {hero.map((p, i) => (
+          <div class={`hero-bottle hb-${i}`}><BottleArt art={p.art} id={`hero-${p.slug}`} /></div>
+        ))}
+        <button class="switch" type="button" role="switch" aria-checked="true" data-switch>
+          <span class="knob"></span>
+          <span class="switch-label" data-on={lang === 'pt' ? 'Luz acesa' : 'Lights on'} data-off={lang === 'pt' ? 'Luz apagada' : 'Lights off'}>
+            {lang === 'pt' ? 'Luz acesa' : 'Lights on'}
+          </span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- PIECES -->
+  <section id="work" class="work">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <div><p class="kicker">Portfolio</p><h2>{t('work.title')}</h2></div>
+        <p class="lead">{t('work.lead')}</p>
+      </div>
+      <div class="filters reveal" role="group" aria-label={t('work.title')}>
+        {categories.map((c, i) => (
+          <button type="button" class="chip" aria-pressed={i === 0 ? 'true' : 'false'} data-filter={c.id}>{c.label[lang]}</button>
+        ))}
+      </div>
+      <ul class="grid" data-grid>
+        {products.map((p) => (
+          <li class="card reveal" data-cat={p.category}>
+            <a class="card-art" href={productUrl(lang, p.slug)} aria-label={p.name[lang]}>
+              {p.photos?.length
+                ? <img src={p.photos[0]} alt={p.name[lang]} loading="lazy" />
+                : <BottleArt art={p.art} id={`card-${p.slug}`} />}
+              <span class={`badge s-${p.status}`}>{statusLabel[p.status][lang]}</span>
+            </a>
+            <div class="card-body">
+              <div class="card-top">
+                <h3><a href={productUrl(lang, p.slug)}>{p.name[lang]}</a></h3>
+                <span class="price">{formatPrice(lang, p.price)}</span>
+              </div>
+              <p>{p.short[lang]}</p>
+              <div class="card-actions">
+                <a class="link" href={productUrl(lang, p.slug)}>{t('work.details')} →</a>
+                <a class="btn btn-small" href={`?peca=${p.slug}#order`} data-order={p.slug}>{t('work.order')}</a>
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <p class="empty" data-empty hidden>{t('work.empty')}</p>
+    </div>
+  </section>
+
+  <!-- PROCESS -->
+  <section id="process" class="process">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <div><p class="kicker">Atelier</p><h2>{t('process.title')}</h2></div>
+        <p class="lead">{t('process.lead')}</p>
+      </div>
+      <ol class="steps">
+        {steps.map((n) => (
+          <li class="step reveal" style={`transition-delay:${n * 90}ms`}>
+            <span class="step-n">0{n}</span>
+            <h3>{t(`process.${n}.t`)}</h3>
+            <p>{t(`process.${n}.d`)}</p>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+
+  <!-- ABOUT + TESTIMONIALS -->
+  <section id="about" class="about">
+    <div class="wrap about-grid">
+      <div class="portrait reveal" aria-hidden="true">
+        <!-- TODO: replace with a photo of Angela at work: <img src="/img/angela.jpg" alt="..."> -->
+        <div class="portrait-ph"><span>A</span></div>
+      </div>
+      <div class="about-copy reveal">
+        <p class="kicker">{t('nav.about')}</p>
+        <h2>{t('about.title')}</h2>
+        <p>{t('about.p1')}</p>
+        <p>{t('about.p2')}</p>
+        <p class="sign">{t('about.sign')}</p>
+      </div>
+    </div>
+    <div class="wrap">
+      <h3 class="quotes-title reveal">{t('quotes.title')}</h3>
+      <ul class="quotes">
+        {testimonials.map((q) => (
+          <li class="reveal"><blockquote>“{q.text[lang]}”</blockquote><cite>{q.name} · {q.city}</cite></li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <!-- FAIRS -->
+  <section id="fairs" class="fairs dark">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <div><p class="kicker">{t('nav.fairs')}</p><h2>{t('fairs.title')}</h2></div>
+        <p class="lead">{t('fairs.lead')}</p>
+      </div>
+      <ul class="events">
+        {upcoming.map((e) => (
+          <li class="event reveal" data-end={e.end ?? e.start}>
+            <div class="date">
+              <span class="day">{day(e)}</span>
+              <span class="mon">{month(e.start)}</span>
+            </div>
+            <div class="event-info">
+              <h3>{e.name}</h3>
+              <p class="meta">{weekday(e)}{e.hours && ` · ${e.hours}`}</p>
+              <p class="where">{e.venue}, {e.city}</p>
+              {e.note && <p class="note">{e.note[lang]}</p>}
+            </div>
+            <div class="event-links">
+              <a class="btn btn-ghost btn-small" href={mapsUrl(e)} target="_blank" rel="noopener">{t('fairs.map')}</a>
+              {e.link && <a class="link" href={e.link} target="_blank" rel="noopener">{t('fairs.more')} →</a>}
+            </div>
+          </li>
+        ))}
+      </ul>
+      <p class="events-empty" data-events-empty hidden={upcoming.length > 0}>{t('fairs.empty')}</p>
+      <p class="reserve reveal">✦ {t('fairs.reserve')} <a href="#order">{t('nav.contact')} →</a></p>
+    </div>
+  </section>
+
+  <!-- ORDER -->
+  <section id="order" class="order">
+    <div class="wrap order-grid">
+      <div class="reveal">
+        <p class="kicker">{t('nav.contact')}</p>
+        <h2>{t('contact.title')}</h2>
+        <p class="lead">{t('contact.lead')}</p>
+        <div class="direct">
+          <p class="direct-title">{t('contact.direct')}</p>
+          <a href={`https://wa.me/${site.whatsapp}`} target="_blank" rel="noopener">WhatsApp</a>
+          <a href={`mailto:${site.email}`}>{site.email}</a>
+          <a href={`https://instagram.com/${site.instagram}`} target="_blank" rel="noopener">@{site.instagram}</a>
+        </div>
+      </div>
+      <form class="order-form reveal" data-form
+        data-wa={site.whatsapp} data-email={site.email}
+        data-greet={t('form.greeting')} data-greet-custom={t('form.greeting.custom')}
+        data-l-name={t('form.name')} data-l-email={t('form.email')}>
+        <div class="row">
+          <label>{t('form.name')}<input name="name" required autocomplete="name" /></label>
+          <label>{t('form.email')}<input name="email" type="email" autocomplete="email" /></label>
+        </div>
+        <label>{t('form.piece')}
+          <select name="piece">
+            <option value="">{t('form.piece.custom')}</option>
+            {products.filter((p) => p.status !== 'sold').map((p) => (
+              <option value={p.slug} data-label={`${p.name[lang]} (${formatPrice(lang, p.price)})`}>{p.name[lang]} — {formatPrice(lang, p.price)}</option>
+            ))}
+          </select>
+        </label>
+        <label>{t('form.message')}<textarea name="message" rows="5" placeholder={t('form.message.ph')}></textarea></label>
+        <div class="send">
+          <button class="btn btn-primary" name="via" value="wa">{t('form.send.whatsapp')}</button>
+          <button class="btn btn-ghost" name="via" value="email">{t('form.send.email')}</button>
+        </div>
+        <p class="hint">{t('form.hint')}</p>
+      </form>
+    </div>
+  </section>
+</Base>
+
+<script>
+  // Hero light switch
+  const sw = document.querySelector<HTMLButtonElement>('[data-switch]');
+  sw?.addEventListener('click', () => {
+    const on = sw.getAttribute('aria-checked') !== 'true';
+    sw.setAttribute('aria-checked', String(on));
+    const label = sw.querySelector<HTMLElement>('.switch-label')!;
+    label.textContent = on ? label.dataset.on! : label.dataset.off!;
+    document.querySelectorAll('[data-hero] .bottle').forEach((b) => b.classList.toggle('is-lit', on));
+    document.querySelector('[data-hero]')!.classList.toggle('lights-off', !on);
+  });
+
+  // Gallery filters
+  const chips = document.querySelectorAll<HTMLButtonElement>('[data-filter]');
+  const cards = document.querySelectorAll<HTMLElement>('[data-grid] [data-cat]');
+  const empty = document.querySelector<HTMLElement>('[data-empty]')!;
+  chips.forEach((chip) => chip.addEventListener('click', () => {
+    const f = chip.dataset.filter;
+    chips.forEach((c) => c.setAttribute('aria-pressed', String(c === chip)));
+    let shown = 0;
+    cards.forEach((c) => { const ok = f === 'all' || c.dataset.cat === f; c.hidden = !ok; if (ok) { shown++; c.classList.add('in'); } });
+    empty.hidden = shown > 0;
+  }));
+
+  // Hide fairs that ended since the last build
+  const today = new Date().toISOString().slice(0, 10);
+  const evs = document.querySelectorAll<HTMLElement>('[data-end]');
+  let left = 0;
+  evs.forEach((e) => { if (e.dataset.end! < today) e.remove(); else left++; });
+  document.querySelector<HTMLElement>('[data-events-empty]')!.hidden = left > 0;
+
+  // Order form → prefilled WhatsApp / email
+  const form = document.querySelector<HTMLFormElement>('[data-form]')!;
+  const select = form.querySelector<HTMLSelectElement>('select[name=piece]')!;
+  const preselect = (slug: string | null) => { if (slug && select.querySelector(`option[value="${slug}"]`)) select.value = slug; };
+  preselect(new URLSearchParams(location.search).get('peca'));
+  document.querySelectorAll<HTMLAnchorElement>('[data-order]').forEach((a) => a.addEventListener('click', (e) => {
+    e.preventDefault();
+    preselect(a.dataset.order!);
+    history.replaceState(null, '', `?peca=${a.dataset.order}#order`);
+    document.getElementById('order')!.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    setTimeout(() => form.querySelector<HTMLInputElement>('input[name=name]')!.focus({ preventScroll: true }), 600);
+  }));
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const via = ((e as SubmitEvent).submitter as HTMLButtonElement | null)?.value ?? 'wa';
+    const data = new FormData(form);
+    const ds = form.dataset;
+    const opt = select.selectedOptions[0];
+    const intro = select.value ? `${ds.greet}: ${opt.dataset.label}.` : `${ds.greetCustom}.`;
+    const lines = [intro, '', String(data.get('message') || '').trim(), '',
+      `${ds.lName}: ${data.get('name')}`, data.get('email') ? `${ds.lEmail}: ${data.get('email')}` : '']
+      .filter((l, i, a) => !(l === '' && a[i - 1] === '')).join('\n').trim();
+    if (via === 'email') {
+      const subject = select.value ? opt.dataset.label! : ds.greetCustom!;
+      location.href = `mailto:${ds.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(lines)}`;
+    } else {
+      window.open(`https://wa.me/${ds.wa}?text=${encodeURIComponent(lines)}`, '_blank', 'noopener');
+    }
+  });
+</script>
+
+<style>
+  /* HERO */
+  .hero { min-height: 100svh; display: grid; align-items: center; padding: 110px 0 60px; position: relative; overflow: hidden;
+    background: radial-gradient(60% 60% at 75% 55%, #3a2814 0%, var(--night) 70%); transition: background .8s; }
+  .hero.lights-off { background: radial-gradient(60% 60% at 75% 55%, #1b1610 0%, #0e0b08 70%); }
+  .hero-grid { display: grid; grid-template-columns: 1.05fr 1fr; gap: 3rem; align-items: center; }
+  h1 { font-size: clamp(3rem, 8vw, 6.2rem); font-weight: 400; margin-bottom: .35em; }
+  .hero-ctas { display: flex; flex-wrap: wrap; gap: .8rem; margin: 2rem 0 2.6rem; }
+  .stats { display: flex; gap: 2.4rem; margin: 0; flex-wrap: wrap; }
+  .stats dt { font-family: var(--display); font-size: 1.8rem; color: var(--amber-soft); }
+  .stats dd { margin: 0; font-size: .85rem; color: #b5a48e; }
+  .hero-art { position: relative; height: min(70vh, 560px); }
+  .hero-bottle { position: absolute; bottom: 8%; }
+  .hb-0 { left: 0; width: 34%; height: 62%; }
+  .hb-1 { left: 30%; width: 40%; height: 84%; z-index: 2; }
+  .hb-2 { right: 0; width: 32%; height: 72%; }
+  .hero-bottle { animation: float 7s ease-in-out infinite; }
+  .hb-1 { animation-delay: -2s; } .hb-2 { animation-delay: -4s; }
+  @keyframes float { 50% { transform: translateY(-10px); } }
+  @media (prefers-reduced-motion: reduce) { .hero-bottle { animation: none; } }
+  .switch { position: absolute; right: 0; bottom: -6px; display: inline-flex; align-items: center; gap: .7rem; background: none; border: 0; color: var(--cream); font: 500 .85rem var(--body); cursor: pointer; z-index: 3; }
+  .switch .knob { width: 46px; height: 26px; border-radius: 99px; background: #3b3026; position: relative; transition: background .3s; }
+  .switch .knob::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #8d7d6c; transition: transform .3s, background .3s, box-shadow .3s; }
+  .switch[aria-checked='true'] .knob { background: #6b4a1e; }
+  .switch[aria-checked='true'] .knob::after { transform: translateX(20px); background: var(--amber-soft); box-shadow: 0 0 12px 3px rgba(255,196,105,.7); }
+
+  /* WORK */
+  .filters { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 2.2rem; }
+  .chip { border: 1.5px solid var(--line); background: #fff; color: var(--ink); padding: .5rem 1rem; border-radius: 99px; font: 500 .9rem var(--body); cursor: pointer; transition: .2s; }
+  .chip:hover { border-color: var(--ink-soft); }
+  .chip[aria-pressed='true'] { background: var(--ink); color: var(--cream); border-color: var(--ink); }
+  .grid { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.6rem; }
+  .card { background: #fff; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); display: flex; flex-direction: column; transition: transform .3s, box-shadow .3s; }
+  .card:hover { transform: translateY(-4px); box-shadow: 0 18px 40px -18px rgba(60,40,20,.35); }
+  .card-art { position: relative; display: block; aspect-ratio: 4 / 4.4; background: radial-gradient(70% 60% at 50% 60%, #2c2117, var(--night)); padding: 1.6rem 1.6rem 1rem; }
+  .card-art img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
+  .card-art :global(.bottle) { transition: transform .5s; }
+  .card:hover .card-art :global(.bottle) { transform: scale(1.04); }
+  .badge { position: absolute; top: .9rem; left: .9rem; font-size: .72rem; font-weight: 600; letter-spacing: .04em; padding: .25rem .6rem; border-radius: 99px; background: rgba(255,255,255,.92); color: var(--ink); }
+  .badge.s-available::before { content: '● '; color: #3f8f4f; }
+  .badge.s-order::before { content: '● '; color: var(--amber); }
+  .badge.s-sold { background: rgba(0,0,0,.55); color: #ddd; }
+  .card-body { padding: 1.2rem 1.3rem 1.3rem; display: flex; flex-direction: column; flex: 1; }
+  .card-body p { color: var(--ink-soft); font-size: .95rem; flex: 1; }
+  .card-top { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+  .card h3 { font-size: 1.45rem; margin: 0 0 .35rem; }
+  .card h3 a { text-decoration: none; }
+  .price { font-weight: 600; white-space: nowrap; color: var(--terracotta); }
+  .card-actions { display: flex; justify-content: space-between; align-items: center; gap: .8rem; }
+  .link { font-size: .9rem; font-weight: 600; text-decoration: none; }
+  .link:hover { text-decoration: underline; }
+  .btn-small { padding: .5rem 1rem; font-size: .85rem; }
+  .card .btn-small { background: var(--ink); color: var(--cream); }
+  .card .btn-small:hover { background: var(--terracotta); }
+  .empty { color: var(--ink-soft); }
+
+  /* PROCESS */
+  .process { background: var(--cream); }
+  .steps { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.6rem; counter-reset: s; }
+  .step { border-top: 1.5px solid var(--ink); padding-top: 1.2rem; }
+  .step-n { font-family: var(--display); font-style: italic; color: var(--terracotta); font-size: 1.1rem; }
+  .step h3 { font-size: 1.6rem; margin: .4rem 0 .5rem; }
+  .step p { color: var(--ink-soft); font-size: .97rem; }
+
+  /* ABOUT */
+  .about-grid { display: grid; grid-template-columns: .85fr 1fr; gap: clamp(2rem, 6vw, 5rem); align-items: center; margin-bottom: 5rem; }
+  .portrait-ph { aspect-ratio: 4/5; border-radius: 200px 200px var(--radius) var(--radius); background: linear-gradient(160deg, #d9b98d, var(--terracotta)); display: grid; place-items: center; }
+  .portrait-ph span { font-family: var(--display); font-style: italic; font-size: 9rem; color: rgba(255,255,255,.7); }
+  .about-copy p { font-size: 1.12rem; max-width: 52ch; }
+  .sign { font-family: var(--display); font-style: italic; font-size: 1.6rem !important; color: var(--terracotta); }
+  .quotes-title { font-size: 1.8rem; margin-bottom: 1.5rem; }
+  .quotes { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.4rem; }
+  .quotes li { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 1.6rem; }
+  blockquote { margin: 0 0 1rem; font-family: var(--display); font-size: 1.15rem; line-height: 1.45; }
+  cite { font-style: normal; font-size: .85rem; color: var(--ink-soft); font-weight: 600; }
+
+  /* FAIRS */
+  .fairs { background: radial-gradient(50% 70% at 10% 0%, #33240f 0%, var(--night) 70%); }
+  .events { list-style: none; padding: 0; margin: 0; display: grid; gap: 1rem; }
+  .event { display: grid; grid-template-columns: auto 1fr auto; gap: 1.6rem; align-items: center; padding: 1.4rem 1.6rem; border-radius: var(--radius); background: var(--night-2); border: 1px solid rgba(255,255,255,.07); transition: border-color .3s; }
+  .event:hover { border-color: rgba(242,169,59,.5); }
+  .date { width: 88px; text-align: center; padding: .7rem 0; border-radius: 14px; background: rgba(242,169,59,.12); color: var(--amber-soft); }
+  .day { display: block; font-family: var(--display); font-size: 1.9rem; line-height: 1; }
+  .mon { display: block; text-transform: uppercase; letter-spacing: .14em; font-size: .75rem; font-weight: 600; margin-top: .3rem; }
+  .event h3 { font-size: 1.45rem; margin: 0 0 .2rem; }
+  .event p { margin: 0; }
+  .meta { color: var(--amber-soft); font-size: .9rem; text-transform: capitalize; }
+  .where { color: #e7dccd; }
+  .note { color: #a8977f; font-size: .9rem; margin-top: .2rem !important; }
+  .event-links { display: flex; flex-direction: column; gap: .5rem; align-items: flex-end; }
+  .events-empty { color: #c9b9a4; }
+  .reserve { margin-top: 2rem; color: #c9b9a4; }
+  .reserve a { color: var(--amber-soft); font-weight: 600; text-decoration: none; }
+
+  /* ORDER */
+  .order { background: var(--cream); }
+  .order-grid { display: grid; grid-template-columns: .9fr 1.1fr; gap: clamp(2rem, 6vw, 5rem); align-items: start; }
+  .direct { margin-top: 2.2rem; display: grid; gap: .4rem; }
+  .direct-title { font-size: .78rem; letter-spacing: .14em; text-transform: uppercase; font-weight: 600; color: var(--ink-soft); margin: 0 0 .3rem; }
+  .direct a { font-family: var(--display); font-size: 1.3rem; text-decoration: none; width: fit-content; }
+  .direct a:hover { color: var(--terracotta); }
+  .order-form { background: #fff; padding: clamp(1.4rem, 4vw, 2.4rem); border-radius: var(--radius); border: 1px solid var(--line); display: grid; gap: 1.1rem; box-shadow: 0 30px 60px -40px rgba(60,40,20,.4); }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  label { display: grid; gap: .35rem; font-size: .85rem; font-weight: 600; color: var(--ink-soft); }
+  input, select, textarea { font: 400 1rem var(--body); color: var(--ink); padding: .8rem .9rem; border: 1.5px solid var(--line); border-radius: 12px; background: var(--paper); width: 100%; transition: border-color .2s; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--amber); background: #fff; }
+  textarea { resize: vertical; }
+  .send { display: flex; flex-wrap: wrap; gap: .7rem; }
+  .send .btn-ghost { color: var(--ink); }
+  .send .btn-ghost:hover { background: var(--cream); }
+  .hint { font-size: .85rem; color: var(--ink-soft); margin: 0; }
+
+  /* RESPONSIVE */
+  @media (max-width: 960px) {
+    .steps { grid-template-columns: 1fr 1fr; }
+    .quotes { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 860px) {
+    .hero { min-height: auto; }
+    .hero-grid, .about-grid, .order-grid { grid-template-columns: 1fr; }
+    .hero-art { height: 380px; order: -1; max-width: 440px; width: 100%; margin: 0 auto; }
+    .portrait { max-width: 340px; }
+    .event { grid-template-columns: auto 1fr; }
+    .event-links { grid-column: 1 / -1; flex-direction: row; align-items: center; }
+  }
+  @media (max-width: 560px) {
+    .grid { grid-template-columns: 1fr 1fr; gap: .8rem; }
+    .card-art { padding: .9rem .9rem .5rem; }
+    .badge { top: .5rem; left: .5rem; font-size: .66rem; }
+    .card-body { padding: .8rem .85rem .9rem; }
+    .card-top { flex-direction: column; gap: 0; }
+    .card h3 { font-size: 1.15rem; margin-bottom: .15rem; }
+    .price { font-size: .9rem; margin-bottom: .4rem; }
+    .card-body p { font-size: .82rem; line-height: 1.45; }
+    .card-actions .link { display: none; }
+    .card-actions .btn-small { width: 100%; justify-content: center; }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); }
+    .steps, .row { grid-template-columns: 1fr; }
+    .hero-art { height: 300px; }
+    .event { padding: 1.1rem; gap: 1rem; }
+    .date { width: 70px; }
+    .day { font-size: 1.5rem; }
+    .stats { gap: 1.6rem; }
+  }
+</style>

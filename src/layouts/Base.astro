@@ -1,0 +1,119 @@
+---
+import '../styles/global.css';
+import { site, type Lang } from '../data/site';
+import { useT } from '../i18n';
+
+interface Props { lang: Lang; title?: string; description?: string; altPath: string }
+const { lang, title, description, altPath } = Astro.props;
+const t = useT(lang);
+const home = lang === 'pt' ? '/' : '/en/';
+const otherLang: Lang = lang === 'pt' ? 'en' : 'pt';
+const nav = [
+  ['work', t('nav.work')], ['process', t('nav.process')], ['about', t('nav.about')], ['fairs', t('nav.fairs')],
+] as const;
+const pageTitle = title ?? t('meta.title');
+const desc = description ?? t('meta.desc');
+const ptPath = lang === 'pt' ? Astro.url.pathname : altPath;
+const enPath = lang === 'en' ? Astro.url.pathname : altPath;
+---
+<!doctype html>
+<html lang={lang === 'pt' ? 'pt-PT' : 'en'}>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{pageTitle}</title>
+  <meta name="description" content={desc} />
+  <meta property="og:title" content={pageTitle} />
+  <meta property="og:description" content={desc} />
+  <meta property="og:type" content="website" />
+  <link rel="alternate" hreflang="pt-PT" href={new URL(ptPath, Astro.site)} />
+  <link rel="alternate" hreflang="en" href={new URL(enPath, Astro.site)} />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <header class="site-header" data-header>
+    <div class="wrap bar">
+      <a class="logo" href={home} aria-label={`${site.brand} ${site.brandSuffix}`}>
+        <span class="logo-dot" aria-hidden="true"></span>{site.brand}<em>{site.brandSuffix}</em>
+      </a>
+      <button class="menu-btn" aria-expanded="false" aria-controls="menu" data-menu-btn>
+        <span class="sr-only">Menu</span><span></span><span></span>
+      </button>
+      <nav id="menu" class="menu" data-menu>
+        {nav.map(([id, label]) => <a href={`${home}#${id}`}>{label}</a>)}
+        <a class="lang" href={altPath} hreflang={otherLang} lang={otherLang}>
+          {otherLang === 'en' ? 'EN' : 'PT'}
+        </a>
+        <a class="btn btn-primary nav-cta" href={`${home}#order`}>{t('nav.contact')}</a>
+      </nav>
+    </div>
+  </header>
+
+  <main><slot /></main>
+
+  <footer class="site-footer dark">
+    <div class="wrap foot">
+      <a class="logo" href={home}><span class="logo-dot" aria-hidden="true"></span>{site.brand}<em>{site.brandSuffix}</em></a>
+      <p>{t('footer.made')} {site.city} · © {new Date().getFullYear()}</p>
+      <div class="foot-links">
+        <a href={`https://instagram.com/${site.instagram}`} rel="noopener" target="_blank">Instagram</a>
+        <a href={`mailto:${site.email}`}>Email</a>
+        <a href={`https://wa.me/${site.whatsapp}`} rel="noopener" target="_blank">WhatsApp</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const header = document.querySelector('[data-header]')!;
+    const onScroll = () => header.classList.toggle('scrolled', window.scrollY > 20);
+    onScroll(); addEventListener('scroll', onScroll, { passive: true });
+
+    const btn = document.querySelector<HTMLButtonElement>('[data-menu-btn]')!;
+    const menu = document.querySelector('[data-menu]')!;
+    const setOpen = (open: boolean) => { btn.setAttribute('aria-expanded', String(open)); document.body.classList.toggle('menu-open', open); };
+    btn.addEventListener('click', () => setOpen(btn.getAttribute('aria-expanded') !== 'true'));
+    menu.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => setOpen(false)));
+
+    const io = new IntersectionObserver((entries) => entries.forEach((e) => {
+      if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+    }), { threshold: 0.12 });
+    document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
+  </script>
+
+  <style>
+    .site-header { position: fixed; inset: 0 0 auto; z-index: 50; color: var(--cream); transition: background .3s, box-shadow .3s; }
+    :global(.site-header.scrolled), :global(body.menu-open) .site-header { background: rgba(21,17,13,.92); backdrop-filter: blur(10px); box-shadow: 0 1px 0 rgba(255,255,255,.06); }
+    .bar { display: flex; align-items: center; justify-content: space-between; height: 72px; }
+    .logo { font-family: var(--display); font-size: 1.45rem; text-decoration: none; display: inline-flex; align-items: center; gap: .5rem; }
+    .logo em { font-style: italic; color: var(--amber); margin-left: .3rem; }
+    .logo-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 14px 4px rgba(242,169,59,.6); }
+    .menu { display: flex; align-items: center; gap: 1.8rem; }
+    .menu a:not(.btn) { text-decoration: none; font-size: .95rem; opacity: .85; }
+    .menu a:not(.btn):hover { opacity: 1; color: var(--amber-soft); }
+    .lang { border: 1px solid rgba(255,255,255,.3); border-radius: 999px; padding: .2rem .65rem; font-size: .8rem !important; font-weight: 600; letter-spacing: .08em; }
+    .nav-cta { padding: .6rem 1.15rem; }
+    .menu-btn { display: none; }
+
+    @media (max-width: 860px) {
+      .menu-btn { display: grid; gap: 6px; background: none; border: 0; padding: 10px; cursor: pointer; }
+      .menu-btn span:not(.sr-only) { width: 24px; height: 2px; background: var(--cream); transition: transform .25s; }
+      :global(body.menu-open) .menu-btn span:nth-of-type(2) { transform: translateY(4px) rotate(45deg); }
+      :global(body.menu-open) .menu-btn span:nth-of-type(3) { transform: translateY(-4px) rotate(-45deg); }
+      .menu { position: fixed; inset: 72px 0 auto; flex-direction: column; align-items: flex-start; gap: 1.2rem;
+        padding: 1.5rem 1.25rem 2rem; background: rgba(21,17,13,.97); transform: translateY(-120%); transition: transform .3s; z-index: -1; }
+      .menu a:not(.btn) { font-size: 1.2rem; }
+      :global(body.menu-open) .menu { transform: none; }
+    }
+
+    .site-footer { padding: 3rem 0; }
+    .foot { display: flex; flex-wrap: wrap; gap: 1.2rem 2rem; align-items: center; justify-content: space-between; }
+    .foot p { margin: 0; color: #b5a48e; font-size: .9rem; }
+    .foot-links { display: flex; gap: 1.4rem; }
+    .foot-links a { text-decoration: none; opacity: .8; }
+    .foot-links a:hover { opacity: 1; color: var(--amber-soft); }
+  </style>
+</body>
+</html>

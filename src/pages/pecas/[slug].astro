@@ -1,0 +1,6 @@
+---
+import Piece from '../../components/Piece.astro';
+import { products } from '../../data/products';
+export const getStaticPaths = () => products.map((product) => ({ params: { slug: product.slug }, props: { product } }));
+---
+<Piece lang="pt" product={Astro.props.product} />
